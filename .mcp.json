@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "taskvantage": {
+      "command": "npx",
+      "args": ["tsx", "src/index.ts"],
+      "cwd": "mcp-server",
+      "env": {
+        "SFDC_CLIENT_ID": "${SFDC_CLIENT_ID}",
+        "SFDC_CLIENT_SECRET": "${SFDC_CLIENT_SECRET}",
+        "SFDC_INSTANCE_URL": "${SFDC_INSTANCE_URL}",
+        "SNOW_INSTANCE_URL": "${SNOW_INSTANCE_URL}",
+        "SNOW_USERNAME": "${SNOW_USERNAME}",
+        "SNOW_PASSWORD": "${SNOW_PASSWORD}",
+        "FGA_STORE_ID": "${FGA_STORE_ID}",
+        "FGA_MODEL_ID": "${FGA_MODEL_ID}",
+        "FGA_CLIENT_ID": "${FGA_CLIENT_ID}",
+        "FGA_CLIENT_SECRET": "${FGA_CLIENT_SECRET}"
+      }
+    }
+  }
+}

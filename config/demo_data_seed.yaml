@@ -1,0 +1,378 @@
+# =============================================================================
+# Bedrock XAA Demo — Salesforce + ServiceNow Seed Data
+# =============================================================================
+# Populates both systems with cross-referenced data that the Product
+# Intelligence Agent can query to produce compelling demo responses.
+#
+# Persona: Deku Midoriya, VP of Product at TaskVantage
+# Use case: Preparing for quarterly product reviews — needs to understand
+#   which customers want which features, which deals are at risk due to
+#   support issues, and what the top product requests are.
+#
+# The data is designed so that the agent can cross-reference between
+# systems: "Acme Corp has a $2.4M renewal coming up AND 3 open P1
+# incidents AND has requested the entitlement governance feature."
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Persona
+# ---------------------------------------------------------------------------
+persona:
+  name: "Deku Midoriya"
+  email: "deku.midoriya@taskvantage.ai"
+  title: "VP of Product"
+  department: "Product"
+  agent_name: "Product Intelligence Agent"
+  agent_purpose: >
+    Helps Deku prepare for quarterly product reviews by cross-referencing
+    customer opportunity data in Salesforce with support incidents and
+    feature requests in ServiceNow. Answers questions about which features
+    customers want, which deals are at risk, and what to prioritize.
+
+# ---------------------------------------------------------------------------
+# Salesforce: Accounts
+# ---------------------------------------------------------------------------
+# These represent TaskVantage's customers and prospects. The agent queries
+# these when asked about customer health, pipeline, or renewal risk.
+salesforce_accounts:
+  - name: "Acme Corp"
+    industry: "Technology"
+    type: "Customer"
+    annual_revenue: 45000000
+    employees: 320
+    billing_city: "San Francisco"
+    billing_state: "CA"
+    status: "Active"
+    contract_arr: 2400000
+    renewal_date: "2026-09-15"
+    health_score: "Yellow"
+    account_owner: "Derek Jeter"
+    segment: "Enterprise"
+    notes: "Key reference customer. 3 open P1s causing friction. Renewal at risk if not resolved."
+
+  - name: "Pinnacle Financial"
+    industry: "Financial Services"
+    type: "Prospect"
+    annual_revenue: 4200000000
+    employees: 8500
+    billing_city: "New York"
+    billing_state: "NY"
+    status: "In Evaluation"
+    contract_arr: 0
+    renewal_date: null
+    health_score: null
+    account_owner: "Derek Jeter"
+    segment: "Strategic"
+    notes: "Competitive deal with SailPoint. Deep entitlement requirements. $1.2M ARR opportunity."
+
+  - name: "NorthStar Insurance"
+    industry: "Insurance"
+    type: "Customer"
+    annual_revenue: 890000000
+    employees: 3200
+    billing_city: "Chicago"
+    billing_state: "IL"
+    status: "Active - At Risk"
+    contract_arr: 890000
+    renewal_date: "2026-07-01"
+    health_score: "Red"
+    account_owner: "Bernie Williams"
+    segment: "Enterprise"
+    notes: "Budget freeze rumored. Champion left last month. Renewal at risk."
+
+  - name: "Meridian Healthcare"
+    industry: "Healthcare"
+    type: "Customer"
+    annual_revenue: 1200000000
+    employees: 5400
+    billing_city: "Boston"
+    billing_state: "MA"
+    status: "Active"
+    contract_arr: 1500000
+    renewal_date: "2026-12-01"
+    health_score: "Green"
+    account_owner: "Andy Pettitte"
+    segment: "Strategic"
+    notes: "Expanding into OIG. Very interested in access certifications and entitlement bundles."
+
+  - name: "Apex Manufacturing"
+    industry: "Manufacturing"
+    type: "Customer"
+    annual_revenue: 670000000
+    employees: 2100
+    billing_city: "Detroit"
+    billing_state: "MI"
+    status: "Active"
+    contract_arr: 450000
+    renewal_date: "2027-03-01"
+    health_score: "Green"
+    account_owner: "Chili Davis"
+    segment: "Mid-Market"
+    notes: "Steady customer. Light support load. Interested in OPA for server access."
+
+# ---------------------------------------------------------------------------
+# Salesforce: Opportunities
+# ---------------------------------------------------------------------------
+# Active deals that the agent can reference when asked about pipeline,
+# competitive deals, or revenue at risk.
+salesforce_opportunities:
+  - name: "Pinnacle Financial - IGA Modernization"
+    account: "Pinnacle Financial"
+    stage: "Evaluation / Proof of Concept"
+    amount: 1200000
+    close_date: "2026-06-30"
+    probability: 40
+    type: "New Business"
+    competitor: "SailPoint"
+    owner: "Derek Jeter"
+    next_step: "Technical bake-off demo scheduled for April 19"
+    product_interest: ["OIG Entitlements", "Access Certifications", "Lifecycle Management"]
+    notes: "CTO Robert Kim is the economic buyer. VP Identity Amanda Foster is the champion. Need deep entitlement visibility to win."
+
+  - name: "NorthStar Insurance - Renewal FY26"
+    account: "NorthStar Insurance"
+    stage: "Renewal - At Risk"
+    amount: 890000
+    close_date: "2026-07-01"
+    probability: 55
+    type: "Renewal"
+    competitor: null
+    owner: "Bernie Williams"
+    next_step: "Executive sponsor meeting needed. CISO David Park is neutral."
+    product_interest: ["MFA Modernization", "Lifecycle Management"]
+    notes: "Champion left. Budget freeze rumored. Need to find new champion."
+
+  - name: "Meridian Healthcare - OIG Expansion"
+    account: "Meridian Healthcare"
+    stage: "Proposal / Negotiation"
+    amount: 750000
+    close_date: "2026-05-31"
+    probability: 75
+    type: "Expansion"
+    competitor: "Saviynt"
+    owner: "Andy Pettitte"
+    next_step: "Final pricing approval from Meridian CFO"
+    product_interest: ["OIG Entitlements", "Access Certifications", "Entitlement Bundles", "SoD Policies"]
+    notes: "Strong technical win. Legal reviewing MSA. Saviynt was shortlisted but eliminated in round 2."
+
+  - name: "Acme Corp - OPA Add-on"
+    account: "Acme Corp"
+    stage: "Qualification"
+    amount: 360000
+    close_date: "2026-08-15"
+    probability: 30
+    type: "Expansion"
+    competitor: "CyberArk"
+    owner: "Derek Jeter"
+    next_step: "POC for server access management — pending P1 resolution"
+    product_interest: ["OPA Server Access", "Sudo Command Bundles", "Password Checkout"]
+    notes: "Interested but P1 incidents are blocking progress. VP Eng Maria Chen won't expand until stability issues resolved."
+
+  - name: "Apex Manufacturing - Mid-Market Upsell"
+    account: "Apex Manufacturing"
+    stage: "Discovery"
+    amount: 200000
+    close_date: "2026-09-30"
+    probability: 20
+    type: "Expansion"
+    competitor: null
+    owner: "Chili Davis"
+    next_step: "Initial discovery call scheduled"
+    product_interest: ["OPA Server Access", "ODA Desktop MFA"]
+    notes: "Low-touch customer looking to expand. Good candidate for self-service POC."
+
+# ---------------------------------------------------------------------------
+# ServiceNow: Incidents
+# ---------------------------------------------------------------------------
+# Support tickets that the agent cross-references with Salesforce data.
+# Key narrative: P1 incidents at Acme Corp are blocking a $360K expansion deal.
+servicenow_incidents:
+  - number: "INC-4521"
+    short_description: "Production API latency exceeding SLA thresholds"
+    description: >
+      Acme Corp reporting intermittent 5-second response times on their
+      production API endpoints. Started after the platform update on Monday.
+      Affecting their customer-facing application. SLA target is 200ms p99.
+    priority: "P1"
+    state: "In Progress"
+    assigned_to: "Lance Briggs"
+    assignment_group: "Engineering - Platform"
+    customer: "Acme Corp"
+    opened_days_ago: 2
+    sla_breach: false
+
+  - number: "INC-4518"
+    short_description: "SSO intermittent failures for Acme Corp users"
+    description: >
+      Multiple Acme Corp users reporting sporadic SSO failures. Affects
+      approximately 15% of login attempts. SAML assertion validation
+      intermittently failing due to clock drift.
+    priority: "P1"
+    state: "In Progress"
+    assigned_to: "Devin Hester"
+    assignment_group: "Engineering - Identity"
+    customer: "Acme Corp"
+    opened_days_ago: 3
+    sla_breach: false
+
+  - number: "INC-4512"
+    short_description: "Data export timeout for large datasets"
+    description: >
+      Acme Corp data export jobs timing out when exporting datasets larger
+      than 500K records. Regression from Q2 platform update. Blocking
+      quarterly reporting.
+    priority: "P1"
+    state: "Escalated"
+    assigned_to: "Brian Urlacher"
+    assignment_group: "Engineering - Data Platform"
+    customer: "Acme Corp"
+    opened_days_ago: 5
+    sla_breach: true
+
+  - number: "INC-4505"
+    short_description: "MFA enrollment not propagating for new users"
+    description: >
+      NorthStar Insurance new employees completing MFA enrollment but
+      status not being reflected. Suspected SCIM provisioning pipeline delay.
+    priority: "P2"
+    state: "Open"
+    assigned_to: "Charles Tillman"
+    assignment_group: "Engineering - Identity"
+    customer: "NorthStar Insurance"
+    opened_days_ago: 4
+    sla_breach: false
+
+  - number: "INC-4498"
+    short_description: "POC environment setup for Pinnacle Financial"
+    description: >
+      Setting up dedicated POC environment for Pinnacle Financial evaluation.
+      Need sandbox with sample data, SSO configuration, and API access.
+      Competitive deal — timeline is critical.
+    priority: "P3"
+    state: "In Progress"
+    assigned_to: "Jay Cutler"
+    assignment_group: "Engineering - Solutions"
+    customer: "Pinnacle Financial"
+    opened_days_ago: 6
+    sla_breach: false
+
+# ---------------------------------------------------------------------------
+# ServiceNow: Product Enhancement Requests
+# ---------------------------------------------------------------------------
+# Feature requests from customers that the agent uses to identify patterns
+# and inform product prioritization.
+servicenow_enhancements:
+  - number: "ENH-0892"
+    title: "Deep entitlement visibility for Oracle EBS"
+    description: >
+      Need native entitlement discovery for Oracle E-Business Suite
+      responsibilities and access sets. Currently requires custom SCIM
+      connector which is fragile and expensive to maintain.
+    requested_by: "Pinnacle Financial"
+    priority: "High"
+    product_area: "OIG - Entitlements"
+    votes: 12
+    status: "Under Review"
+    submitted_days_ago: 45
+
+  - number: "ENH-0878"
+    title: "Cross-app separation of duties policies"
+    description: >
+      Need SoD policies that span entitlements across different applications
+      (e.g., conflicting roles in Salesforce AND ServiceNow simultaneously).
+      Currently SoD only works within a single app.
+    requested_by: "Meridian Healthcare"
+    priority: "High"
+    product_area: "OIG - Risk Rules"
+    votes: 23
+    status: "Planned - Q3 2026"
+    submitted_days_ago: 60
+
+  - number: "ENH-0901"
+    title: "Automated entitlement bundle recommendations"
+    description: >
+      AI-powered suggestions for which entitlements should be grouped into
+      bundles based on usage patterns. Manual bundle creation is time-consuming
+      for large entitlement sets.
+    requested_by: "Acme Corp"
+    priority: "Medium"
+    product_area: "OIG - Entitlement Bundles"
+    votes: 8
+    status: "Backlog"
+    submitted_days_ago: 30
+
+  - number: "ENH-0865"
+    title: "Real-time access certification reminders via Slack"
+    description: >
+      Send certification campaign reminders directly to Slack channels
+      instead of email only. Reviewers miss email reminders — Slack has
+      higher visibility for time-sensitive actions.
+    requested_by: "Acme Corp"
+    priority: "Medium"
+    product_area: "OIG - Access Certifications"
+    votes: 31
+    status: "In Development"
+    submitted_days_ago: 90
+
+  - number: "ENH-0910"
+    title: "OPA server access for Windows via RDP"
+    description: >
+      Extend OPA privileged access management to Windows servers via
+      native RDP protocol. Currently only supports SSH for Linux.
+    requested_by: "Apex Manufacturing"
+    priority: "Medium"
+    product_area: "OPA - Server Access"
+    votes: 15
+    status: "Planned - Q4 2026"
+    submitted_days_ago: 20
+
+  - number: "ENH-0845"
+    title: "Governance API OAuth scope coverage"
+    description: >
+      Many governance API endpoints still require SSWS tokens and don't
+      support OAuth scopes. Need full OAuth coverage for programmatic
+      access to governance features.
+    requested_by: "Meridian Healthcare"
+    priority: "High"
+    product_area: "OIG - API"
+    votes: 19
+    status: "Under Review"
+    submitted_days_ago: 75
+
+# ---------------------------------------------------------------------------
+# Cross-Reference Queries the Agent Should Handle
+# ---------------------------------------------------------------------------
+# These are the "wow" questions that demonstrate the value of cross-system
+# AI — things that would take a human 30+ minutes to answer manually.
+demo_queries:
+  - question: "Which customers are requesting entitlement governance features?"
+    expected_answer: >
+      Cross-references ENH requests tagged "OIG - Entitlements" with Salesforce
+      accounts. Shows: Pinnacle Financial (Oracle EBS entitlements, $1.2M prospect),
+      Meridian Healthcare (cross-app SoD, $750K expansion), Acme Corp (automated
+      bundle recommendations, $2.4M renewal).
+
+  - question: "Show me P1 incidents and associated opportunities — are any deals at risk?"
+    expected_answer: >
+      Links Acme Corp's 3 P1 incidents to their $360K OPA expansion opportunity
+      (blocked — VP Eng won't expand until stability issues resolved) and their
+      $2.4M renewal (Yellow health, renewal in September). Total revenue at risk: $2.76M.
+
+  - question: "What are the most-requested product features across all customers?"
+    expected_answer: >
+      Ranks ENH requests by votes: Slack certification reminders (31 votes),
+      cross-app SoD (23 votes), governance API OAuth (19 votes), OPA Windows RDP
+      (15 votes), Oracle EBS entitlements (12 votes).
+
+  - question: "Prepare a briefing for the quarterly product review"
+    expected_answer: >
+      Synthesizes: top customer issues (Acme P1 cluster), at-risk revenue
+      ($2.76M Acme + $890K NorthStar), competitive deals (Pinnacle vs SailPoint,
+      Meridian vs Saviynt), top feature requests by vote count, and product area
+      heatmap (OIG - Entitlements has the most demand).
+
+  - question: "What's the competitive landscape for OIG deals this quarter?"
+    expected_answer: >
+      Pinnacle Financial: SailPoint (need deep entitlement visibility to win).
+      Meridian Healthcare: Saviynt (eliminated in round 2, we're winning).
+      Acme Corp OPA: CyberArk (early stage, blocked by P1s).

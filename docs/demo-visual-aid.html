@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Securing AI Agent Access with Okta — Architecture & Capabilities Overview</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @page { size: letter; margin: 0.5in 0.6in; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #1a1f2e;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+
+        /* Header */
+        .doc-header {
+            background: linear-gradient(135deg, #1a1f2e 0%, #2d3548 100%);
+            color: white;
+            padding: 35px 40px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .doc-header h1 { font-size: 21pt; margin-bottom: 6px; }
+        .doc-header .subtitle { opacity: 0.85; font-size: 11pt; }
+        .doc-header .meta {
+            margin-top: 15px;
+            display: flex;
+            gap: 25px;
+            font-size: 9pt;
+            opacity: 0.7;
+        }
+
+        /* Sections */
+        h2 {
+            color: #1a1f2e;
+            font-size: 15pt;
+            margin: 35px 0 15px 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #007dc1;
+            counter-increment: section;
+        }
+        h2::before {
+            content: counter(section) ". ";
+            color: #007dc1;
+        }
+        body { counter-reset: section; }
+
+        h3 {
+            color: #333;
+            font-size: 12pt;
+            margin: 22px 0 10px 0;
+        }
+
+        p { margin: 8px 0; }
+
+        /* Callouts */
+        .callout {
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 15px 0;
+            font-size: 10pt;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .callout-icon { font-size: 16pt; line-height: 1; flex-shrink: 0; }
+        .callout-body { flex: 1; }
+        .callout-body strong { display: block; margin-bottom: 3px; }
+
+        .callout-info {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            color: #0d47a1;
+        }
+        .callout-warn {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+        .callout-tip {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            color: #1b5e20;
+        }
+        .callout-danger {
+            background: #ffebee;
+            border: 1px solid #ef9a9a;
+            color: #b71c1c;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 10pt;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th {
+            background: #1a1f2e;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) { background: #fafafa; }
+
+        /* Mermaid */
+        .mermaid {
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .badge-available {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        .badge-coming {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+        }
+        .badge-future {
+            background: #f3e5f5;
+            color: #7b1fa2;
+            border: 1px solid #ce93d8;
+        }
+
+        /* Architecture diagram container */
+        .arch-container {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 15px 0;
+        }
+
+        /* Capability cards */
+        .cap-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin: 15px 0;
+        }
+        .cap-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+        }
+        .cap-card h4 {
+            font-size: 10.5pt;
+            margin-bottom: 6px;
+            color: #1a1f2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cap-card p {
+            font-size: 9.5pt;
+            color: #555;
+            margin: 0;
+        }
+
+        /* Consideration blocks */
+        .consideration {
+            display: flex;
+            gap: 12px;
+            margin: 10px 0;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-left: 4px solid #007dc1;
+            border-radius: 0 6px 6px 0;
+        }
+        .consideration-icon {
+            font-size: 14pt;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .consideration-body {
+            font-size: 10pt;
+        }
+        .consideration-body strong {
+            display: block;
+            margin-bottom: 2px;
+            color: #1a1f2e;
+        }
+
+        /* Print */
+        .print-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #007dc1;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11pt;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .print-btn:hover { background: #0066a1; }
+
+        @media print {
+            .print-btn { display: none !important; }
+            body { padding: 0; font-size: 10pt; }
+            .doc-header { break-after: avoid; }
+            h2 { break-before: page; }
+            h2:first-of-type { break-before: avoid; }
+            pre, .mermaid, table, .callout, .arch-container {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button>
+
+<div class="doc-header">
+    <h1>Securing AI Agent Access with Okta</h1>
+    <div class="subtitle">Identity-Governed Entitlements for Enterprise AI Agents via the Okta MCP Adapter</div>
+    <div class="meta">
+        <span>Platform: Okta Workforce Identity + OIG</span>
+        <span>Protocol: Model Context Protocol (MCP)</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>The Challenge</h2>
+
+<p>
+    Enterprise teams are adopting AI agents — Claude Cowork, Claude Code, GitHub Copilot, Glean — to automate workflows across internal systems. These agents connect to backend resources (Salesforce, ServiceNow, Jira, internal APIs) through MCP, an open protocol for agent-to-tool communication.
+</p>
+
+<p>
+    MCP standardizes how agents discover and invoke tools, but it has no native identity or authorization layer. Without an identity-aware control point, enterprises face three gaps:
+</p>
+
+<div class="cap-grid">
+    <div class="cap-card">
+        <h4>🔓 No Per-User Authorization</h4>
+        <p>Agents connect with static API keys or service accounts. Every user gets the same access regardless of role, department, or need. There is no least-privilege enforcement.</p>
+    </div>
+    <div class="cap-card">
+        <h4>👻 No Visibility</h4>
+        <p>IT and Security have no audit trail of which user invoked which tool through which agent. Agent activity is invisible to existing SIEM and compliance infrastructure.</p>
+    </div>
+    <div class="cap-card">
+        <h4>🔑 Credential Sprawl</h4>
+        <p>API keys and personal access tokens proliferate across agent configurations. Offboarded employees' credentials may persist in agent configs with no lifecycle management.</p>
+    </div>
+    <div class="cap-card">
+        <h4>⚖️ No Governance</h4>
+        <p>Agent entitlements exist outside IAM governance. No access request workflows, no periodic reviews, no time-bound access, no separation of duties.</p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Architecture</h2>
+
+<p>
+    The Okta MCP Adapter acts as a secure intermediary between AI agents and backend systems. It authenticates users through Okta, scopes their access based on identity policy, and proxies tool calls to backend MCP servers with a per-user token. The backend server reads the token scopes and only exposes tools the user is entitled to.
+</p>
+
+<div class="mermaid">
+flowchart LR
+    subgraph Agents["AI Agents"]
+        direction TB
+        CC([Claude Code])
+        CW([Claude Cowork])
+        GC([GitHub Copilot])
+    end
+
+    subgraph Adapter["Okta MCP Adapter"]
+        direction TB
+        Auth[PKCE + MFA<br>Authentication]
+        Scope[Token Scoping<br>via Okta Claims]
+        Proxy[Secure Proxy<br>+ Audit Log]
+    end
+
+    subgraph Okta["Okta Platform"]
+        direction TB
+        AS[Custom Auth Server<br>Scope Policies]
+        Groups[Group Membership<br>Entitlement Model]
+        OIG[Identity Governance<br>Requests + Certs]
+    end
+
+    subgraph Backends["Backend MCP Servers"]
+        direction TB
+        SFDC[Salesforce<br>CRM Tools]
+        SNOW[ServiceNow<br>ITSM Tools]
+        Custom[Custom<br>Internal Tools]
+    end
+
+    subgraph FGALayer["Okta FGA"]
+        direction TB
+        FGA[Per-Resource<br>Authz Checks<br>67 Tuples]
+    end
+
+    Agents -->|MCP| Adapter
+    Auth <--> AS
+    AS <--> Groups
+    Groups <--> OIG
+    Adapter -->|XAA Token| Backends
+    Backends -->|Check| FGA
+
+    classDef agent fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef adapter fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100
+    classDef okta fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef backend fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#01579b
+    classDef fga fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+
+    class CC,CW,GC agent
+    class Auth,Scope,Proxy adapter
+    class AS,Groups,OIG okta
+    class SFDC,SNOW,Custom backend
+    class FGA fga
+</div>
+
+<h3>Token Flow</h3>
+
+<div class="mermaid">
+flowchart TD
+    Connect([User Connects Agent<br>to MCP Adapter])
+    PKCE[Adapter Initiates<br>PKCE Auth Flow]
+    Login[User Authenticates<br>with Okta + MFA]
+    Evaluate[Okta Evaluates<br>Group Membership]
+    Token[Scoped Token Issued<br>Based on Groups]
+    Proxy[Adapter Proxies<br>Tool Calls with Token]
+    Filter[Backend Filters<br>tools/list by Scopes]
+    Agent([Agent Sees Only<br>Authorized Tools])
+
+    Connect --> PKCE
+    PKCE --> Login
+    Login --> Evaluate
+    Evaluate --> Token
+    Token --> Proxy
+    Proxy --> Filter
+    Filter --> Agent
+
+    classDef trigger fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef action fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#01579b
+    classDef okta fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef endpoint fill:#eceff1,stroke:#546e7a,stroke-width:2px,color:#37474f
+
+    class Connect trigger
+    class PKCE,Proxy,Filter action
+    class Login,Evaluate,Token okta
+    class Agent endpoint
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Entitlement Model</h2>
+
+<p>
+    Agent tool access is governed through Okta group membership. Each group maps to a set of OAuth scopes, and each scope maps to a tier of tools on the backend MCP server. Users only see tools matching their assigned scopes.
+</p>
+
+<table>
+    <tr>
+        <th>Okta Group</th>
+        <th>Token Scopes</th>
+        <th>Tools Available</th>
+        <th>Example Actions</th>
+    </tr>
+    <tr>
+        <td><code>Cowork-CRM-Read</code></td>
+        <td><code>sfdc:read</code></td>
+        <td>Search, view opportunities and accounts</td>
+        <td>"Show me open opportunities for Acme Corp"</td>
+    </tr>
+    <tr>
+        <td><code>Cowork-CRM-Write</code></td>
+        <td><code>sfdc:read</code> <code>sfdc:write</code></td>
+        <td>All read tools + create and update opportunities</td>
+        <td>"Create a new opportunity for the Q3 renewal"</td>
+    </tr>
+    <tr>
+        <td><code>Cowork-ITSM-Read</code></td>
+        <td><code>snow:read</code></td>
+        <td>Search, view incidents</td>
+        <td>"Show me all P1 incidents from this week"</td>
+    </tr>
+    <tr>
+        <td><code>Cowork-ITSM-Write</code></td>
+        <td><code>snow:read</code> <code>snow:write</code></td>
+        <td>All read tools + create and update incidents</td>
+        <td>"Create an incident for the VPN outage"</td>
+    </tr>
+    <tr>
+        <td><em>(no Cowork groups)</em></td>
+        <td><em>(no resource scopes)</em></td>
+        <td><em>No tools visible to the agent</em></td>
+        <td><em>Agent authenticates but cannot take any action</em></td>
+    </tr>
+</table>
+
+<div class="callout callout-info">
+    <span class="callout-icon">ℹ️</span>
+    <div class="callout-body">
+        <strong>Zero Standing Privilege</strong>
+        Users authenticate successfully through Okta but receive zero tool access until explicitly granted an entitlement. The agent cannot discover, invoke, or even attempt to call tools outside the user's scoped entitlements.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Governance with Okta Identity Governance</h2>
+
+<p>
+    Because agent entitlements are modeled as Okta group memberships, they are immediately governable through OIG's existing workflows — no custom connector or resource type development required.
+</p>
+
+<h3>Access Requests</h3>
+
+<p>
+    Users request agent entitlements through the OIG self-service portal. Each entitlement tier is a catalog item with a configured approval chain. Time-bound access is supported — elevated entitlements (e.g., write access) can auto-revoke after a defined period.
+</p>
+
+<table>
+    <tr>
+        <th>Request Type</th>
+        <th>Grants</th>
+        <th>Approval</th>
+        <th>Duration</th>
+    </tr>
+    <tr>
+        <td>Cowork: CRM Read Access</td>
+        <td><code>Cowork-CRM-Read</code></td>
+        <td>Manager</td>
+        <td>Persistent</td>
+    </tr>
+    <tr>
+        <td>Cowork: CRM Write Access</td>
+        <td><code>Cowork-CRM-Write</code></td>
+        <td>Manager + App Owner</td>
+        <td>8 hours (default)</td>
+    </tr>
+    <tr>
+        <td>Cowork: ITSM Read Access</td>
+        <td><code>Cowork-ITSM-Read</code></td>
+        <td>Manager</td>
+        <td>Persistent</td>
+    </tr>
+    <tr>
+        <td>Cowork: ITSM Write Access</td>
+        <td><code>Cowork-ITSM-Write</code></td>
+        <td>Manager + App Owner</td>
+        <td>8 hours (default)</td>
+    </tr>
+</table>
+
+<h3>Access Certifications</h3>
+
+<p>
+    Periodic certification campaigns review agent entitlements alongside traditional application access. Reviewers see each user's Cowork group memberships and can confirm or revoke. Revocation removes the group membership, and the user's agent tools disappear on next connection.
+</p>
+
+<h3>Lifecycle</h3>
+
+<div class="mermaid">
+flowchart LR
+    Request([User Requests<br>Agent Entitlement])
+    Approve[Manager<br>Approves]
+    Grant[OIG Adds User<br>to Okta Group]
+    Token[Next Auth: Token<br>Includes New Scopes]
+    Tools([New Tools<br>Appear in Agent])
+
+    Request --> Approve
+    Approve --> Grant
+    Grant --> Token
+    Token --> Tools
+
+    classDef trigger fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef action fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#01579b
+    classDef okta fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef endpoint fill:#eceff1,stroke:#546e7a,stroke-width:2px,color:#37474f
+
+    class Request trigger
+    class Approve,Grant okta
+    class Token action
+    class Tools endpoint
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Availability & Roadmap</h2>
+
+<table>
+    <tr>
+        <th>Capability</th>
+        <th>Status</th>
+        <th>Details</th>
+    </tr>
+    <tr>
+        <td>Per-user Okta authentication (PKCE + MFA)</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Adapter handles full OIDC auth flow per user session</td>
+    </tr>
+    <tr>
+        <td>Per-backend scoped tokens</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Token scopes determined by Okta group membership + auth server policies</td>
+    </tr>
+    <tr>
+        <td>Tool-level filtering on backend</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Backend MCP server reads scopes, filters tools/list response</td>
+    </tr>
+    <tr>
+        <td>OIG access requests and certifications</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Group-based entitlements governed through standard OIG workflows</td>
+    </tr>
+    <tr>
+        <td>Time-bound elevated access</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>OIG auto-revokes group membership after approved duration</td>
+    </tr>
+    <tr>
+        <td>Audit trail (adapter logs)</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>All tool invocations logged with user identity, tool name, and timestamp</td>
+    </tr>
+    <tr>
+        <td>Admin UI dashboard</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Visual management console for adapter configuration — live at admin.YOUR-DOMAIN</td>
+    </tr>
+    <tr>
+        <td>SIEM streaming</td>
+        <td><span class="badge badge-coming">Coming</span></td>
+        <td>Push audit events to Splunk, Cribl, or existing SIEM pipelines</td>
+    </tr>
+    <tr>
+        <td>Okta FGA per-resource authorization</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Live with 67 tuples — per-tool and per-account relationship checks evaluated at every tool invocation</td>
+    </tr>
+    <tr>
+        <td>OPA policy engine in adapter</td>
+        <td><span class="badge badge-coming">Coming</span></td>
+        <td>Context-aware per-tool authorization within the adapter layer</td>
+    </tr>
+    <tr>
+        <td>Cross-App Access (XAA) token exchange</td>
+        <td><span class="badge badge-available">Available</span></td>
+        <td>Adapter performs XAA token exchange to obtain resource tokens for backend MCP servers</td>
+    </tr>
+    <tr>
+        <td>Human-in-the-loop approvals</td>
+        <td><span class="badge badge-coming">Coming</span></td>
+        <td>Real-time approval prompts for sensitive tool invocations</td>
+    </tr>
+    <tr>
+        <td>Agent Gateway (productized)</td>
+        <td><span class="badge badge-future">Future</span></td>
+        <td>Okta-managed control plane replacing the need for PS-deployed adapter</td>
+    </tr>
+    <tr>
+        <td>Universal Logout for AI Agents</td>
+        <td><span class="badge badge-future">Future</span></td>
+        <td>Instant revocation of all active agent sessions across the enterprise</td>
+    </tr>
+</table>
+
+<div class="callout callout-tip">
+    <span class="callout-icon">💡</span>
+    <div class="callout-body">
+        <strong>Deployment Model</strong>
+        The Okta MCP Adapter is available today as a professional services engagement. It is deployed into your infrastructure (cloud or on-premises), managed by your team, and configured against your Okta org. Agent Gateway on the Okta product roadmap will deliver these capabilities as a managed service.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Considerations</h2>
+
+<p>
+    Enterprise deployment of AI agents with governed access requires awareness of the current state of the ecosystem. The following considerations reflect the maturity of both the Okta MCP Adapter and the broader agent platform landscape as of April 2026.
+</p>
+
+<div class="consideration">
+    <span class="consideration-icon">🔄</span>
+    <div class="consideration-body">
+        <strong>Session Lifecycle and Token Refresh</strong>
+        Users must re-authenticate when their token expires or when their entitlements change. Entitlement changes (group adds/removes via OIG) take effect on next authentication, not mid-session. The adapter's short-lived tokens (configurable TTL) limit the window of stale entitlements.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">🌐</span>
+    <div class="consideration-body">
+        <strong>Remote Agent Connectivity</strong>
+        Cloud-based agents (e.g., Claude Cowork) connect to MCP servers through their platform's cloud infrastructure, not from the user's machine. The adapter must be internet-reachable and must correctly handle the PKCE redirect flow through the agent platform's proxy. Validate this flow during deployment for each agent platform.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">📊</span>
+    <div class="consideration-body">
+        <strong>Observability Integration</strong>
+        Agent activity through the adapter is logged in the adapter's own audit log. Today, this is separate from both Okta System Log and the agent platform's native telemetry (e.g., Anthropic's OpenTelemetry). SIEM streaming is on the adapter roadmap to unify these into a single observability pipeline. Until then, correlating agent activity across layers requires manual log aggregation.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">🏗️</span>
+    <div class="consideration-body">
+        <strong>Backend MCP Server Responsibility</strong>
+        The adapter scopes the token; the backend MCP server must read the scopes and filter tools accordingly. In this demo, the MCP server also integrates Okta FGA checks — every tool invocation is evaluated against the FGA relationship store before execution, enforcing per-resource authorization. Vendor-provided MCP servers (e.g., from Salesforce or ServiceNow) may not support scope-based tool filtering or FGA integration today. Custom backend MCP servers provide full control over both behaviors.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">📋</span>
+    <div class="consideration-body">
+        <strong>Agent Platform Maturity</strong>
+        Anthropic's Claude Enterprise provides SCIM-based user provisioning, role-based access controls, per-tool connector restrictions (org-wide), and OpenTelemetry event streaming. However, Cowork activity is currently excluded from Anthropic's Audit Logs, Compliance API, and Data Exports. The adapter's audit trail provides a compensating control for this gap. Evaluate the agent platform's governance maturity alongside the Okta integration when planning deployment scope.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">🔒</span>
+    <div class="consideration-body">
+        <strong>Tenant Restrictions</strong>
+        Claude Enterprise supports tenant restrictions via proxy header injection (<code>anthropic-allowed-org-ids</code>) to prevent users from bypassing organizational controls with personal accounts. This is an Enterprise-only feature and requires network proxy configuration (Zscaler, Prisma, Netskope, etc.). Without tenant restrictions, users can switch to personal accounts on the same machine and bypass org-level guardrails.
+    </div>
+</div>
+
+<div class="consideration">
+    <span class="consideration-icon">🎯</span>
+    <div class="consideration-body">
+        <strong>Granularity Trade-offs</strong>
+        The current model governs entitlements at the tier level (read, write, admin) using Okta groups. Per-tool granularity is architecturally possible with OIG custom entitlement definitions but adds governance overhead. For most enterprises, tier-based entitlements provide the right balance of security and operational simplicity. Okta FGA is now live in the adapter, providing fine-grained, per-resource authorization at invocation time — checking whether a user can act on a specific account or record — without requiring per-tool OIG entitlements. The adapter's OPA policy engine (on roadmap) will add context-aware per-tool authorization within the adapter layer itself.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Per-Tool Entitlement Governance — Future Architecture</h2>
+
+<p>
+    The tier-based model (read / write / admin) covers most enterprise use cases. For organizations requiring per-tool governance through OIG, the following architecture describes what individual tool entitlement management would require.
+</p>
+
+<h3>What It Would Look Like</h3>
+
+<p>
+    Each MCP tool becomes a discrete OIG entitlement on an application resource. Instead of a user holding "CRM Write Access" as a group membership, they would hold individual entitlements like <code>sfdc:create_opportunity</code>, <code>sfdc:update_opportunity</code>, and <code>sfdc:log_activity</code>. These would appear as certifiable entitlements in OIG campaigns and requestable items in the access catalog.
+</p>
+
+<h3>What It Would Require</h3>
+
+<table>
+    <tr>
+        <th>Component</th>
+        <th>Requirement</th>
+    </tr>
+    <tr>
+        <td>OIG Resource Model</td>
+        <td>Register the MCP Adapter (or each backend) as an OIG-managed application with fine-grained entitlements defined per tool</td>
+    </tr>
+    <tr>
+        <td>Entitlement Sync</td>
+        <td>A SCIM connector or governance connector to push tool-level entitlement definitions into OIG and sync assignments back to the authorization layer</td>
+    </tr>
+    <tr>
+        <td>Token Claims</td>
+        <td>Auth server would need to issue tokens with per-tool claims rather than tier-level scopes, or the adapter would need to resolve entitlements from a policy store at invocation time</td>
+    </tr>
+    <tr>
+        <td>Adapter Policy Engine</td>
+        <td>OPA or FGA integration in the adapter to evaluate per-tool authorization decisions at runtime (on the adapter roadmap)</td>
+    </tr>
+    <tr>
+        <td>Certification UX</td>
+        <td>Reviewers would need to understand individual tool semantics during certification. For a user with 15 tools across 3 backends, this may create reviewer fatigue. Bundle-based certification (certify the tier, not each tool) may be more practical.</td>
+    </tr>
+</table>
+
+<div class="callout callout-warn">
+    <span class="callout-icon">⚠️</span>
+    <div class="callout-body">
+        <strong>Recommendation</strong>
+        Start with tier-based entitlements. Monitor actual usage patterns through the adapter's audit log. If specific tools require tighter governance (e.g., <code>bulk_export</code> or <code>delete</code> operations), selectively add fine-grained controls for those tools rather than governing every tool individually.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Resource-Level Authorization with Okta FGA</h2>
+
+<p>
+    The previous sections address two authorization questions: <em>"which tools can this user see?"</em> (scope-based filtering) and <em>"which individual tools should be governed?"</em> (per-tool OIG entitlements). Okta Fine-Grained Authorization (FGA) addresses a third, fundamentally different question: <em>"can this user perform this action on this specific resource?"</em>
+</p>
+
+<div class="callout callout-tip">
+    <span class="callout-icon">&#9989;</span>
+    <div class="callout-body">
+        <strong>FGA Is Live</strong>
+        In this demo, the MCP server checks Okta FGA on every tool invocation. Product team members can read all accounts but cannot invoke write tools. Sales reps can only modify accounts in their territory. The FGA store contains 67 relationship tuples covering users, accounts, territories, and tool permissions.
+    </div>
+</div>
+
+<h3>Three Layers of Authorization</h3>
+
+<table>
+    <tr>
+        <th>Layer</th>
+        <th>Question Answered</th>
+        <th>Mechanism</th>
+        <th>Evaluation Time</th>
+    </tr>
+    <tr>
+        <td><strong>1. Authentication + Scoping</strong><br>(Adapter)</td>
+        <td>Who is this user, and which backends can they reach?</td>
+        <td>PKCE + MFA → scoped OAuth token based on Okta group membership</td>
+        <td>At session start</td>
+    </tr>
+    <tr>
+        <td><strong>2. Tool Filtering</strong><br>(Backend MCP Server)</td>
+        <td>Which tools can this user see and invoke?</td>
+        <td>Backend reads token scopes, filters <code>tools/list</code> response</td>
+        <td>At tool discovery</td>
+    </tr>
+    <tr>
+        <td><strong>3. Resource Authorization</strong><br>(Okta FGA)</td>
+        <td>Can this user perform this action on <em>this specific resource</em>?</td>
+        <td>Relationship-based check against Okta FGA policy store (OpenFGA / Zanzibar model)</td>
+        <td>At every tool invocation</td>
+    </tr>
+</table>
+
+<h3>When FGA Matters</h3>
+
+<p>
+    Consider a sales representative with <code>Cowork-CRM-Write</code> access. The tier-based model grants them the <code>create_opportunity</code> tool. But should they be able to create opportunities for <em>any</em> account? In most Salesforce orgs, reps own specific accounts or territories.
+</p>
+
+<p>
+    Okta FGA models these relationships: <code>user:jsmith</code> has relationship <code>owner</code> on <code>account:acme-corp</code>, which grants permission <code>can_create_opportunity</code>. When the agent invokes <code>create_opportunity</code> for Acme Corp, the backend MCP server checks FGA before executing the API call.
+</p>
+
+<h3>Verified Authorization Checks (Live Demo)</h3>
+
+<table>
+    <tr>
+        <th>User</th>
+        <th>Action</th>
+        <th>Resource</th>
+        <th>Result</th>
+    </tr>
+    <tr>
+        <td>Deku (product)</td>
+        <td><code>create_opportunity</code></td>
+        <td>any</td>
+        <td><span style="color:#b71c1c;font-weight:600;">DENIED</span> — product team has no write access</td>
+    </tr>
+    <tr>
+        <td>Deku (product)</td>
+        <td><code>search_accounts</code></td>
+        <td>Acme Corp</td>
+        <td><span style="color:#2e7d32;font-weight:600;">ALLOWED</span> — product team can read all accounts</td>
+    </tr>
+    <tr>
+        <td>Joe (leadership)</td>
+        <td><code>create_opportunity</code></td>
+        <td>any</td>
+        <td><span style="color:#2e7d32;font-weight:600;">ALLOWED</span> — leadership has full access</td>
+    </tr>
+    <tr>
+        <td>Derek (west-enterprise)</td>
+        <td><code>edit</code></td>
+        <td>NorthStar Insurance</td>
+        <td><span style="color:#b71c1c;font-weight:600;">DENIED</span> — not in his territory</td>
+    </tr>
+</table>
+
+<div class="mermaid">
+flowchart TD
+    Invoke([Agent Invokes<br>create_opportunity])
+    Scope{Token Has<br>sfdc:write?}
+    FGA{FGA Check:<br>User Has Relationship<br>to Target Account?}
+    Execute[Execute Salesforce<br>API Call]
+    DenyScope([Denied:<br>Insufficient Scope])
+    DenyFGA([Denied:<br>No Relationship<br>to Resource])
+    Success([Opportunity<br>Created])
+
+    Invoke --> Scope
+    Scope -->|No| DenyScope
+    Scope -->|Yes| FGA
+    FGA -->|No| DenyFGA
+    FGA -->|Yes| Execute
+    Execute --> Success
+
+    classDef trigger fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef decision fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#f57f17
+    classDef action fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#01579b
+    classDef danger fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    classDef endpoint fill:#eceff1,stroke:#546e7a,stroke-width:2px,color:#37474f
+
+    class Invoke trigger
+    class Scope,FGA decision
+    class Execute action
+    class DenyScope,DenyFGA danger
+    class Success endpoint
+</div>
+
+<h3>FGA Advantages Over Scope-Only Authorization</h3>
+
+<div class="cap-grid">
+    <div class="cap-card">
+        <h4>⚡ Real-Time Revocation</h4>
+        <p>Scope-based authorization is checked at token issuance. If entitlements change mid-session, the old scopes persist until re-authentication. FGA is checked on every invocation — revocation is effectively instant.</p>
+    </div>
+    <div class="cap-card">
+        <h4>🎯 Resource Specificity</h4>
+        <p>OAuth scopes cannot express "write access to Acme Corp's opportunities but not Global Industries'." FGA's relationship model can. The authorization decision accounts for the specific resource being acted upon, not just the action category.</p>
+    </div>
+    <div class="cap-card">
+        <h4>🔗 Relationship Inheritance</h4>
+        <p>FGA supports relationship hierarchies. A user who <code>owns</code> an account can automatically <code>create_opportunity</code> for that account. If the account belongs to a <code>territory</code>, the territory manager inherits access. These relationships compose naturally without requiring explicit per-resource entitlements.</p>
+    </div>
+    <div class="cap-card">
+        <h4>📐 Open Standard</h4>
+        <p>Okta FGA is built on OpenFGA, an open-source implementation of the Google Zanzibar authorization model. The same relationship model can be used across agent authorization, application authorization, and data access control — one policy framework for the enterprise.</p>
+    </div>
+</div>
+
+<h3>Prerequisites for FGA Integration</h3>
+
+<table>
+    <tr>
+        <th>Prerequisite</th>
+        <th>Details</th>
+    </tr>
+    <tr>
+        <td>Authorization Model</td>
+        <td>Define the FGA type definitions: which resource types exist (accounts, opportunities, configuration items, etc.), which relationships are valid (owner, member, viewer), and which permissions derive from those relationships</td>
+    </tr>
+    <tr>
+        <td>Relationship Data</td>
+        <td>Populate the FGA store with relationship tuples synced from source systems. For Salesforce: account ownership and territory assignments. For ServiceNow: business unit membership and CI ownership. This sync must be ongoing, not one-time.</td>
+    </tr>
+    <tr>
+        <td>Backend Integration</td>
+        <td>Backend MCP server must call the FGA Check API before executing write operations, passing the user identity, the action, and the target resource. Read operations may or may not require FGA checks depending on data sensitivity.</td>
+    </tr>
+    <tr>
+        <td>Adapter Policy Engine</td>
+        <td>The adapter's OPA/FGA policy engine (on roadmap) would centralize these checks in the adapter layer rather than requiring each backend to integrate independently</td>
+    </tr>
+</table>
+
+<div class="callout callout-info">
+    <span class="callout-icon">ℹ️</span>
+    <div class="callout-body">
+        <strong>Phased Adoption</strong>
+        FGA adds the most value for write operations on sensitive resources — creating, modifying, or deleting records where the user's relationship to the specific resource matters. Read operations and low-risk writes can remain scope-governed. In this demo, FGA is live with 67 tuples covering territory-based account ownership and role-based tool permissions. Start with the tier-based model, layer in FGA for high-impact operations as the relationship data becomes available.
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Live Demo Infrastructure</h2>
+
+<table>
+    <tr>
+        <th>Component</th>
+        <th>URL</th>
+        <th>Status</th>
+    </tr>
+    <tr>
+        <td>MCP Adapter</td>
+        <td><code>adapter.YOUR-DOMAIN</code></td>
+        <td><span class="badge badge-available">Live</span></td>
+    </tr>
+    <tr>
+        <td>MCP Server</td>
+        <td><code>mcp.YOUR-DOMAIN</code></td>
+        <td><span class="badge badge-available">Live</span> — 14 tools</td>
+    </tr>
+    <tr>
+        <td>Admin UI</td>
+        <td><code>admin.YOUR-DOMAIN</code></td>
+        <td><span class="badge badge-available">Live</span></td>
+    </tr>
+    <tr>
+        <td>Okta FGA</td>
+        <td><code>dashboard.fga.dev</code></td>
+        <td><span class="badge badge-available">Live</span> — 67 tuples</td>
+    </tr>
+    <tr>
+        <td>Salesforce</td>
+        <td><code>YOUR-SALESFORCE-INSTANCE</code></td>
+        <td>5 accounts, 5 opportunities</td>
+    </tr>
+    <tr>
+        <td>ServiceNow</td>
+        <td><code>YOUR-SERVICENOW-INSTANCE</code></td>
+        <td>5 incidents, 6 enhancements</td>
+    </tr>
+</table>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' }
+    });
+</script>
+
+</body>
+</html>
