@@ -420,6 +420,9 @@ Edit `scripts/setup_fga.py`:
 | ServiceNow returns HTML instead of JSON | Dev instance is hibernating — wake it at developer.servicenow.com before the demo |
 | State lock errors in Terraform | Wait 60s and retry — another workflow may be running |
 | Claude Code shows no tools | Restart Claude Code, verify `.mcp.json` exists in the repo root |
+| MCP Server 504 after TF apply | SG rule for port 3000 deleted — must be inline in main.tf, not standalone |
+| Admin UI restart loop | Increase memory to 1024 MB in task definition |
+| Services seesaw during deploy | Add deployment_minimum_healthy_percent=100 to ECS services |
 
 ---
 

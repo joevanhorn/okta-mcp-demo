@@ -80,6 +80,8 @@ python3 mcp-server/scripts/seed_demo_data.py --mode populate --target both \
 claude mcp add --transport http okta-adapter https://adapter.YOUR-DOMAIN
 ```
 
+> **Note:** All ECS services use blue/green deployments (`deployment_minimum_healthy_percent=100`). Deploys take ~3 minutes as new tasks start before old ones drain.
+
 ### Claude Code Skills
 
 If using Claude Code in this repo, interactive skills guide you through each phase:

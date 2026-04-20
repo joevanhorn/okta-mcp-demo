@@ -286,6 +286,32 @@ claude mcp add --transport http okta-adapter https://adapter.YOUR-DOMAIN --clien
 
 ---
 
+## ECS Infrastructure Stability
+
+### 26. Inline SG Rules, Not Standalone
+
+When a security group has inline `ingress` blocks in Terraform, do NOT add standalone `aws_vpc_security_group_ingress_rule` resources for the same SG. Terraform treats inline rules as authoritative and silently deletes standalone rules on every apply. All ports (8000, 8080, 3000, 3001) must be inline in the fargate SG definition in `main.tf`.
+
+**Symptom:** MCP Server 504s after every Terraform apply. Port 3000 SG rule is deleted.
+
+### 27. Blue/Green Deployment for ECS
+
+Set `deployment_minimum_healthy_percent = 100` and `deployment_maximum_percent = 200` on all ECS services. With `desired_count = 1` and the defaults (min=100, max=200 isn't set by default on Fargate), ECS drains the old task before the new one is healthy, causing a gap with zero targets. The explicit settings ensure the new task starts alongside the old one.
+
+**Symptom:** Services alternate between healthy and unhealthy during deploys (seesaw pattern).
+
+### 28. Admin UI Needs 1024 MB Memory
+
+The Next.js Admin UI with NextAuth and server-side rendering needs at least 1024 MB to avoid OOM kills. At 512 MB, the container gets killed by the OOM killer before health checks can pass, causing a restart loop.
+
+**Symptom:** Admin UI container starts ("Ready in 500ms") but never passes health checks and keeps cycling.
+
+### 29. CloudWatch Dashboard for Demo Health
+
+A CloudWatch dashboard (`MCP-Demo-Health`) monitors all services. Alarms fire to SNS → ntfy when any service goes unhealthy. Dashboard URL: `https://us-east-2.console.aws.amazon.com/cloudwatch/home?region=us-east-2#dashboards:name=MCP-Demo-Health`
+
+---
+
 ## Deployment Order
 
 When setting up from scratch, deploy in this order to avoid dependency issues:
