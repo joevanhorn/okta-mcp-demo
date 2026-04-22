@@ -1,0 +1,218 @@
+name: Okta MCP Demo — Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'terraform-plan'
+        type: choice
+        options:
+          - terraform-plan
+          - terraform-apply
+          - terraform-destroy
+          - deploy-mcp-server
+          - deploy-mcp-adapter
+          - deploy-mcp-admin-ui
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-2   # Override in vars.AWS_REGION if needed
+  ECS_CLUSTER: okta-mcp-demo
+
+jobs:
+  deploy:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    environment: mcp-demo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-MCP-Demo-${{ inputs.action }}
+          aws-region: ${{ vars.AWS_REGION || env.AWS_REGION }}
+
+      # =================================================================
+      # Terraform (plan / apply / destroy)
+      # =================================================================
+      - name: Setup Terraform
+        if: startsWith(inputs.action, 'terraform')
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Init
+        if: startsWith(inputs.action, 'terraform')
+        working-directory: terraform
+        run: terraform init -upgrade
+
+      - name: Terraform Plan
+        if: inputs.action == 'terraform-plan' || inputs.action == 'terraform-apply'
+        working-directory: terraform
+        run: terraform plan -out=tfplan -no-color | tee plan.txt
+
+      - name: Terraform Apply
+        if: inputs.action == 'terraform-apply'
+        working-directory: terraform
+        run: terraform apply -auto-approve tfplan | tee apply.txt
+
+      - name: Terraform Outputs
+        if: inputs.action == 'terraform-apply'
+        working-directory: terraform
+        run: terraform output
+
+      - name: Terraform Destroy
+        if: inputs.action == 'terraform-destroy'
+        working-directory: terraform
+        run: terraform destroy -auto-approve -no-color | tee destroy.txt
+
+      # =================================================================
+      # Deploy MCP Server
+      # =================================================================
+      - name: Login to ECR (MCP Server)
+        if: inputs.action == 'deploy-mcp-server'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push MCP Server
+        if: inputs.action == 'deploy-mcp-server'
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URL="${ACCOUNT_ID}.dkr.ecr.${{ vars.AWS_REGION || env.AWS_REGION }}.amazonaws.com/mcp-server"
+
+          docker build -t mcp-server mcp-server/
+          docker tag mcp-server:latest ${ECR_URL}:latest
+          docker tag mcp-server:latest ${ECR_URL}:${{ github.sha }}
+          docker push ${ECR_URL}:latest
+          docker push ${ECR_URL}:${{ github.sha }}
+
+      - name: Force MCP Server ECS Deployment
+        if: inputs.action == 'deploy-mcp-server'
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service mcp-server \
+            --force-new-deployment
+
+      # =================================================================
+      # Deploy MCP Adapter
+      # =================================================================
+      # The adapter is distributed as a zip by Okta PS. Place the zip at
+      # the repo root as okta-agent-mcp-adapter.zip (or update the path).
+      - name: Login to ECR (Adapter)
+        if: inputs.action == 'deploy-mcp-adapter'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push MCP Adapter
+        if: inputs.action == 'deploy-mcp-adapter'
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URL="${ACCOUNT_ID}.dkr.ecr.${{ vars.AWS_REGION || env.AWS_REGION }}.amazonaws.com/mcp-adapter"
+
+          # Extract adapter zip — adjust filename/version as needed
+          ADAPTER_ZIP=$(ls okta-agent-mcp-adapter*.zip 2>/dev/null | head -1)
+          if [ -z "$ADAPTER_ZIP" ]; then
+            echo "ERROR: No okta-agent-mcp-adapter*.zip found in repo root."
+            echo "Download the adapter zip from your Okta PS contact and add it to the repo."
+            exit 1
+          fi
+
+          ADAPTER_DIR=$(basename "$ADAPTER_ZIP" .zip)
+          mkdir -p adapter-build && cd adapter-build
+          unzip -o "../${ADAPTER_ZIP}"
+          touch "${ADAPTER_DIR}/prisma_certificates.pem"
+
+          docker build --build-arg INSTALL_PRISMA_CA=false --platform linux/amd64 \
+            -t mcp-adapter "${ADAPTER_DIR}/"
+
+          cd ..
+          docker tag mcp-adapter:latest ${ECR_URL}:latest
+          docker tag mcp-adapter:latest ${ECR_URL}:${{ github.sha }}
+          docker push ${ECR_URL}:latest
+          docker push ${ECR_URL}:${{ github.sha }}
+
+      - name: Force MCP Adapter ECS Deployment
+        if: inputs.action == 'deploy-mcp-adapter'
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service mcp-adapter \
+            --force-new-deployment
+
+      # =================================================================
+      # Deploy MCP Admin UI
+      # =================================================================
+      - name: Login to ECR (Admin UI)
+        if: inputs.action == 'deploy-mcp-admin-ui'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push Admin UI
+        if: inputs.action == 'deploy-mcp-admin-ui'
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URL="${ACCOUNT_ID}.dkr.ecr.${{ vars.AWS_REGION || env.AWS_REGION }}.amazonaws.com/mcp-admin-ui"
+
+          # Extract adapter zip (Admin UI is bundled inside it)
+          ADAPTER_ZIP=$(ls okta-agent-mcp-adapter*.zip 2>/dev/null | head -1)
+          if [ -z "$ADAPTER_ZIP" ]; then
+            echo "ERROR: No okta-agent-mcp-adapter*.zip found in repo root."
+            exit 1
+          fi
+
+          ADAPTER_DIR=$(basename "$ADAPTER_ZIP" .zip)
+          mkdir -p adapter-build && cd adapter-build
+          unzip -o "../${ADAPTER_ZIP}"
+
+          docker build --platform linux/amd64 \
+            -t mcp-admin-ui "${ADAPTER_DIR}/okta_agent_proxy_admin_ui/"
+
+          cd ..
+          docker tag mcp-admin-ui:latest ${ECR_URL}:latest
+          docker tag mcp-admin-ui:latest ${ECR_URL}:${{ github.sha }}
+          docker push ${ECR_URL}:latest
+          docker push ${ECR_URL}:${{ github.sha }}
+
+      - name: Force Admin UI ECS Deployment
+        if: inputs.action == 'deploy-mcp-admin-ui'
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service mcp-admin-ui \
+            --force-new-deployment
+
+      # =================================================================
+      # Summary + Artifacts
+      # =================================================================
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Okta MCP Demo — ${{ inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** \`${{ inputs.action }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ vars.AWS_REGION || env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform Artifacts
+        if: always() && startsWith(inputs.action, 'terraform')
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-${{ inputs.action }}-${{ github.run_number }}
+          path: |
+            terraform/plan.txt
+            terraform/apply.txt
+            terraform/destroy.txt
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always() && startsWith(inputs.action, 'terraform')
+        working-directory: terraform
+        run: rm -f tfplan plan.txt apply.txt destroy.txt

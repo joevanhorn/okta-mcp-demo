@@ -6,3 +6,8 @@ __pycache__/
 *.zip
 *.log
 .DS_Store
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/tfplan
+terraform/*.tfvars
+!terraform/terraform.tfvars.example

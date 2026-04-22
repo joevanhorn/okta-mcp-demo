@@ -1,0 +1,32 @@
+# =============================================================================
+# Okta MCP Demo — Terraform Variables
+# =============================================================================
+# Copy to terraform.tfvars and fill in your values.
+# NEVER commit terraform.tfvars to version control (it's in .gitignore).
+# =============================================================================
+
+# --- AWS Infrastructure ---
+aws_region     = "us-east-2"
+domain_name    = "mcp-demo.example.com"
+hosted_zone_id = "Z0123456789ABCDEFGHIJ"
+vpc_id         = "vpc-0123456789abcdef0"
+public_subnet_ids  = ["subnet-aaaa", "subnet-bbbb"]
+private_subnet_ids = ["subnet-cccc", "subnet-dddd"]
+
+# --- Okta ---
+okta_domain              = "your-org.okta.com"
+okta_auth_server_id      = "org"           # or custom auth server ID (aus...)
+okta_ai_agent_id         = "wlp..."        # AI Agent ID from Okta
+okta_ai_agent_client_id  = "0oa..."        # OIDC app linked to the AI Agent
+admin_ui_okta_client_id     = "0oa..."     # Admin UI OIDC app
+admin_ui_okta_client_secret = "..."        # Admin UI OIDC app secret
+
+# --- Salesforce ---
+sfdc_client_id     = ""
+sfdc_client_secret = ""
+sfdc_instance_url  = "https://your-org.develop.my.salesforce.com"
+
+# --- ServiceNow ---
+snow_instance_url = "https://devXXXXX.service-now.com"
+snow_username     = "admin"
+snow_password     = ""

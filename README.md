@@ -47,28 +47,35 @@ A complete, deployable demo showing how Okta secures AI agent access to enterpri
 - Okta OIE org with OIG and AI Agents feature enabled
 - Salesforce developer org ([free](https://developer.salesforce.com/signup))
 - ServiceNow developer instance ([free](https://developer.servicenow.com))
-- AWS account (for ECS deployment, ~$83/month)
+- AWS account (for ECS deployment, ~$67/month)
 - Okta FGA tenant ([free](https://dashboard.fga.dev))
 - Node.js 18+, Python 3.10+, Claude Code CLI
 
-### 5-Step Setup
+### 6-Step Setup
 
 ```bash
-# 1. Clone and configure
-git clone https://github.com/YOUR-USERNAME/okta-mcp-demo.git
+# 1. Fork and clone
+gh repo fork joevanhorn/okta-mcp-demo --clone
 cd okta-mcp-demo
 cp .env.example .env
-# Edit .env with your Okta, Salesforce, ServiceNow, and FGA credentials
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+# Edit .env and terraform.tfvars with your values
 
-# 2. Configure Okta (auth server, groups, policies, AI agent)
+# 2. Set up GitHub Actions (AWS OIDC + environment secrets)
+# Follow docs/DEMO_BUILD_GUIDE.md Phase 1, or use:
+claude /demo-setup-infra    # walks you through fork, secrets, OIDC setup
+
+# 3. Configure Okta (auth server, groups, policies, AI agent)
 # Follow docs/DEMO_BUILD_GUIDE.md Phase 2, or use:
 claude /demo-setup-okta
 
-# 3. Deploy infrastructure
-# Follow docs/DEMO_BUILD_GUIDE.md Phase 3, or use:
-claude /demo-setup-infra
+# 4. Deploy infrastructure via GitHub Actions
+gh workflow run deploy.yml -f action=terraform-apply
+gh workflow run deploy.yml -f action=deploy-mcp-server
+gh workflow run deploy.yml -f action=deploy-mcp-adapter
+gh workflow run deploy.yml -f action=deploy-mcp-admin-ui
 
-# 4. Seed demo data
+# 5. Seed demo data
 source .env
 python3 mcp-server/scripts/seed_demo_data.py --mode populate --target both \
   --sf-instance-url $SFDC_INSTANCE_URL --sf-client-id $SFDC_CLIENT_ID \
@@ -76,11 +83,26 @@ python3 mcp-server/scripts/seed_demo_data.py --mode populate --target both \
   --snow-instance-url $SNOW_INSTANCE_URL --snow-user $SNOW_USERNAME \
   --snow-password $SNOW_PASSWORD
 
-# 5. Connect Claude Code
+# 6. Connect Claude Code
 claude mcp add --transport http okta-adapter https://adapter.YOUR-DOMAIN
 ```
 
 > **Note:** All ECS services use blue/green deployments (`deployment_minimum_healthy_percent=100`). Deploys take ~3 minutes as new tasks start before old ones drain.
+
+### GitHub Actions Workflows
+
+The `deploy.yml` workflow handles all infrastructure and service deployments:
+
+```bash
+gh workflow run deploy.yml -f action=terraform-plan     # Preview changes
+gh workflow run deploy.yml -f action=terraform-apply     # Create/update infrastructure
+gh workflow run deploy.yml -f action=deploy-mcp-server   # Build & deploy MCP Server
+gh workflow run deploy.yml -f action=deploy-mcp-adapter  # Build & deploy MCP Adapter
+gh workflow run deploy.yml -f action=deploy-mcp-admin-ui # Build & deploy Admin UI
+gh workflow run deploy.yml -f action=terraform-destroy   # Tear down everything
+```
+
+Requires: GitHub Environment `mcp-demo` with `AWS_ROLE_ARN` secret (OIDC auth, no long-lived keys).
 
 ### Claude Code Skills
 
@@ -123,11 +145,11 @@ See [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) for the full 15-minute demo flow.
 
 | Resource | Monthly |
 |----------|---------|
-| ECS Fargate (5 services) | ~$45 |
+| ECS Fargate (3 services) | ~$30 |
 | RDS PostgreSQL | ~$15 |
 | ALB | ~$20 |
 | Route53 + ACM | ~$2 |
-| **Total** | **~$83** |
+| **Total** | **~$67** |
 
 Tear down: `gh workflow run deploy.yml -f action=terraform-destroy`
 
