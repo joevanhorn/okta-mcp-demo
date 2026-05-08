@@ -100,9 +100,9 @@ RELAY_OKTA_AUTH_SERVER_ID=YOUR-AUTH-SERVER-ID
 
 **Symptom if wrong:** Claude Code hits `/v1/authorize` (404) instead of `/oauth2/{serverId}/v1/authorize`
 
-### 8. Agent Needs client_id and client_secret for Relay
+### 8. Agent Needs client_id, client_secret, AND cimd_client_id for Relay
 
-The adapter's confidential relay pattern requires the agent's OIDC app credentials in the database. When you create an agent via the Admin API:
+The adapter's confidential relay pattern requires the agent's OIDC app credentials in the database, **plus** a binding to the CIMD URL the connecting client will present. When you create an agent via the Admin API:
 
 ```json
 {
@@ -115,6 +115,22 @@ The adapter's confidential relay pattern requires the agent's OIDC app credentia
 ```
 
 **Symptom if missing:** `No relay credentials: agent must have client_id and client_secret configured in the database`
+
+**The error message is misleading.** It says "client_id and client_secret" but the underlying check is `if not relay_client_id`. In practice, the most common cause is that **`cimd_client_id` (DB column `cimd_client_id_url`) is unset on the agent row** — not that `client_secret` is missing. The relay handler resolves the incoming CIMD URL through these steps in order:
+
+1. Match by Okta `client_id` — fails (the incoming value is a URL, not an Okta `0oa...` ID)
+2. Match by `cimd_client_id_url` column — fails if the column is null
+3. CIMD auto-provision — disabled by default (`CIMD_AUTO_PROVISION_AGENT=false`)
+4. DCR — not applicable for CIMD client_ids
+
+If all four miss, `relay_client_id` ends up empty even though `client_secret` is populated, and the relay throws this error.
+
+**Two sneaky operational traps:**
+
+- **The "Import from Okta" flow does NOT populate `cimd_client_id_url`.** You have to set it manually after import (see Build Guide Phase 3.5 step 6). Without this step, every imported agent looks fine in the admin UI but rejects every CIMD authorize.
+- **The Admin UI hides the CIMD field behind a radio toggle.** The agent's edit form has `Standard / CIMD Client / DCR Enabled` radios; the **CIMD Client ID** input only appears when **CIMD Client** is selected. After import, agents default to DCR mode — flip the radio to CIMD and the field appears. Selecting CIMD also forces `dcr_selectable=false`, which is correct for Claude Code (it only uses CIMD — see lesson #30).
+
+The binding is preserved across periodic Okta syncs (the import update path doesn't touch `cimd_client_id_url`). You only set it once per agent unless the row is deleted from the admin UI.
 
 ### 9. Don't Pass --client-id to Claude Code MCP Add
 
@@ -281,6 +297,19 @@ claude mcp add --transport http okta-adapter https://adapter.YOUR-DOMAIN
 # Wrong:
 claude mcp add --transport http okta-adapter https://adapter.YOUR-DOMAIN --client-id 0oaXXX
 ```
+
+### 30. Claude Code Uses CIMD Only — DCR Is Not a Fallback
+
+Claude Code identifies itself exclusively via its CIMD URL: `https://claude.ai/oauth/claude-code-client-metadata`. Even when the adapter advertises both DCR and CIMD in its `/.well-known/oauth-authorization-server` document, Claude Code will pick CIMD and stick with it — there is no automatic fallback to DCR.
+
+Practical implications:
+
+- **`cimd_client_id` binding on the agent record is mandatory, not optional.** See lesson #8.
+- **Toggling the adapter's per-agent mode to "DCR Enabled" does not make Claude Code use DCR.** It just removes the CIMD binding, which makes things worse — the next authorize hits "No relay credentials" because no agent matches.
+- **Disabling CIMD globally (`CIMD_ENABLED=false`) doesn't force Claude Code into DCR either** — the client doesn't re-negotiate. It just keeps presenting its CIMD URL and the adapter rejects every request.
+- **Removing and re-adding the MCP server in Claude Code (`claude mcp remove` / `claude mcp add`) does NOT clear the cached CIMD client_id.** The client treats the CIMD URL as a stable identifier.
+
+If you have prior runbooks suggesting "force DCR by disabling CIMD," they predate this behavior and should be updated.
 
 **Symptom if wrong:** Claude Code constructs its own Okta authorize URL, bypassing the adapter entirely. Authentication fails or succeeds but tools are empty.
 

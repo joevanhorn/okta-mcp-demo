@@ -252,6 +252,11 @@ curl -s -X POST https://adapter.YOUR-DOMAIN/api/admin/resources \
   }'
 
 # Add Claude Code as an agent
+# IMPORTANT: cimd_client_id is REQUIRED for Claude Code. Claude Code identifies
+# itself via CIMD only — when the agent connects, the adapter looks up the
+# matching agent record by this URL. Without it, every authorize attempt fails
+# with "No relay credentials: agent must have client_id and client_secret
+# configured in the database" (the message is misleading — see lesson #8).
 curl -s -X POST https://adapter.YOUR-DOMAIN/api/admin/agents \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -260,6 +265,7 @@ curl -s -X POST https://adapter.YOUR-DOMAIN/api/admin/agents \
     "client_id": "YOUR-OIDC-APP-CLIENT-ID",
     "client_secret": "ACTUAL-SECRET",
     "private_key": "{}",
+    "cimd_client_id": "https://claude.ai/oauth/claude-code-client-metadata",
     "resource_access": ["taskvantage-tools"],
     "enabled": true
   }'
@@ -272,8 +278,11 @@ curl -s -X POST https://adapter.YOUR-DOMAIN/api/admin/agents \
 3. Select the AI agents to import — the import brings in managed connections which the syncer uses to resolve and hydrate resources
 4. Click **Sync All** to resolve connections to resources
 5. Verify resources show as "Linked" with the correct tool count
+6. **Bind the CIMD URL on each imported agent that should serve a CIMD client.** Open the agent's detail page → **Edit** → switch the **Client Mode** radio from **DCR Enabled** (the default after import) to **CIMD Client** → paste the CIMD URL into the **CIMD Client ID** field that appears, then **Save**. For Claude Code, the URL is `https://claude.ai/oauth/claude-code-client-metadata`. The import flow does NOT populate this field automatically; without it, every Claude Code authorize attempt fails with `No relay credentials: agent must have client_id and client_secret configured in the database`. The two modes are mutually exclusive in this UI — selecting CIMD turns DCR off, which is correct for Claude Code (it only ever uses CIMD).
 
 > **Note:** Create ONE managed connection pointing to the MCP Adapter Auth Server. Do not create separate managed connections for each backend system (Salesforce, ServiceNow) if they all point to the same MCP server.
+
+> **Why both API and UI?** Section 3.4 creates a static `claude-code` agent record via the Admin API for testing. Section 3.5 imports agents that exist in Okta as proper AI Agent principals (with linked OIDC apps and managed connections). Either path requires the CIMD URL to be bound; the API call in 3.4 includes it inline, while the UI import does not — so step 6 closes the gap for imported agents.
 
 ---
 
