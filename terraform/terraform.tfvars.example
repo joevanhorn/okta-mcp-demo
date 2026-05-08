@@ -16,7 +16,14 @@ private_subnet_ids = ["subnet-cccc", "subnet-dddd"]
 # --- Okta ---
 okta_domain              = "your-org.okta.com"
 okta_auth_server_id      = "org"           # or custom auth server ID (aus...)
-okta_ai_agent_id         = "wlp..."        # AI Agent ID from Okta
+# The two AI-agent values below come from Build Guide Phase 2.5 (creating the
+# AI Agent and its linked OIDC app in the Okta admin console). Leave them empty
+# on first apply and re-run `terraform apply` once you have the IDs. If the AI
+# Agent is ever recreated in Okta (delete-and-rebuild during testing), update
+# okta_ai_agent_id here before the next apply — leaving it stale silently
+# misroutes ISPM headers, the manual "Sync All resources" button, and ID-JAG
+# token exchange.
+okta_ai_agent_id         = "wlp..."        # AI Agent ID from Okta (Phase 2.5)
 okta_ai_agent_client_id  = "0oa..."        # OIDC app linked to the AI Agent
 admin_ui_okta_client_id     = "0oa..."     # Admin UI OIDC app
 admin_ui_okta_client_secret = "..."        # Admin UI OIDC app secret
