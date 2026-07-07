@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/joevanhorn-okta-mcp-demo-badge.png)](https://mseep.ai/app/joevanhorn-okta-mcp-demo)
+
 # Okta MCP Adapter Demo
 
 **Securing AI Agent Access with Identity Governance**
